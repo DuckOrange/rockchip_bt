@@ -1,0 +1,20 @@
+#
+# VFD device configuration
+#
+
+menuconfig VFD
+	bool "VFD Device Support"
+
+
+if VFD
+
+config FD650
+	tristate "FD650 Driver Support"
+	---help---
+	  Say Y here if you want to use the FD650 for digitron.
+
+config FD650_REVERT
+	bool "revert the digitron"
+	default n
+
+endif # VFD

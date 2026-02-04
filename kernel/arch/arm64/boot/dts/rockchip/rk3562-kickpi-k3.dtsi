@@ -1,0 +1,195 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2022 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+/dts-v1/;
+
+#include "rk3562.dtsi"
+#include "rk3562-kickpi-evb.dtsi"
+#include "rk3562-rk809.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/sensor-dev.h>
+
+#include "rk3562-kickpi-usb.dtsi"
+#include "rk3562-kickpi-ir-pwm3.dtsi"
+#include "rk3562-kickpi-wifibt.dtsi"
+#include "rk3562-kickpi-pcie-m2.dtsi"
+#include "rk3562-kickpi-extend-20pin.dtsi"
+
+#include "rk3562-kickpi-gmac0.dtsi"
+#include "rk3562-kickpi-gmac1.dtsi"
+
+//#include "rk3562-kickpi-dual-mipi-camera-gc5035.dtsi"
+
+#include "rk3562-kickpi-mipi-camera0.dtsi"
+#include "rk3562-kickpi-mipi-camera1.dtsi"
+
+//#include "rk3562-kickpi-lcd-mipi-10.1-800-1280.dtsi"
+#include "rk3562-kickpi-lcd-mipi-10.1-800-1280-v2.dtsi"  // MX101BA1340-48C
+//#include "rk3562-kickpi-lcd-mipi-8-800-1280.dtsi"    // MX080B2140-H538C
+//#include "rk3562-kickpi-lcd-mipi-5-720-1280.dtsi"
+//#include "rk3562-kickpi-lcd-duallvds-6-1920-1080.dtsi"
+//#include "rk3562-kickpi-lcd-lvds-7-1024-600.dtsi"
+ 
+
+/ {
+	model = "Rockchip RK3562 EVB2 DDR4 V10 Board";
+	compatible = "rockchip,rk3562-evb2-ddr4-v10", "rockchip,rk3562";
+
+	dc_12v: dc-12v {
+		compatible = "regulator-fixed";
+		regulator-name = "dc_12v";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+	};
+
+	rk809_sound: rk809-sound {
+		status = "okay";
+		compatible = "rockchip,multicodecs-card";
+		rockchip,card-name = "rockchip-rk809";
+		hp-det-gpio = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
+		rockchip,format = "i2s";
+		rockchip,mclk-fs = <256>;
+		rockchip,cpu = <&sai0>;
+		rockchip,codec = <&rk809_codec>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det>;
+	};
+
+	vcc5v0_sys: vcc5v0-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc5v0_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&dc_12v>;
+	};
+
+	vcc3v3_clk: vcc3v3-clk {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3_clk";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc5v0_sys>;
+	};
+
+	vcc3v3_sys: vcc-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&dc_12v>;
+	};
+
+	vcc25_ddr: vcc25-ddr {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc25_ddr";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <2500000>;
+		regulator-max-microvolt = <2500000>;
+		vin-supply = <&vcc3v3_sys>;
+	};
+
+	vdd_npu: vdd-npu {
+		compatible = "pwm-regulator";
+		pwms = <&pwm6 0 5000 1>;
+		regulator-name = "vdd_npu";
+		regulator-min-microvolt = <800000>;
+		regulator-max-microvolt = <1100000>;
+		regulator-init-microvolt = <900000>;
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-settling-time-up-us = <250>;
+		pwm-supply = <&vcc5v0_sys>;
+		status = "okay";
+	};
+};
+
+&leds {
+	work_led: work-led {
+		gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+		linux,default-trigger = "heartbeat";
+	};
+	fan: fan {
+		gpios = <&gpio0 RK_PC4 GPIO_ACTIVE_HIGH>;
+		default-state = "on";
+	};
+};
+
+&sai0 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&i2s0m0_lrck
+                     &i2s0m0_sclk
+                     &i2s0m0_sdi0
+                     &i2s0m0_sdo0>;
+};
+
+&i2c0 {
+        status = "okay";
+
+        hym8563: hym8563@51 {
+                compatible = "haoyu,hym8563";
+                reg = <0x51>;
+                #clock-cells = <0>;
+                clock-frequency = <32768>;
+                clock-output-names = "hym8563";
+                // IRQ GPIO IS MODIFYED FOR UPDATE HYM8562 DRIVER 
+                //rtc-irq-gpio = <&gpio0 RK_PD3 IRQ_TYPE_EDGE_FALLING>;
+        };
+
+        pca9554: gpio@20 {
+                compatible = "pca9554";
+                reg = <0x20>;
+                status = "okay";
+
+                pca9554_gpio: gpio-normal@20 {
+                        compatible = "pca9554-gpio";
+                        gpio-controller;
+                        #gpio-cells = <2>;
+                };
+        };
+};
+
+&uart3 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart3m0_xfer>;
+};
+
+&pwm6 {
+	status = "okay";
+};
+
+&pinctrl {
+	headphone {
+		hp_det: hp-det {
+			rockchip,pins = <4 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+};
+
+&sdmmc0 {
+	no-sdio;
+	no-mmc;
+	bus-width = <4>;
+	cap-mmc-highspeed;
+	cap-sd-highspeed;
+	disable-wp;
+	sd-uhs-sdr104;
+	vmmc-supply = <&vcc3v3_sd>;
+	vqmmc-supply = <&vccio_sd>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc0_bus4 &sdmmc0_clk &sdmmc0_cmd &sdmmc0_det>;
+	status = "okay";
+};
+

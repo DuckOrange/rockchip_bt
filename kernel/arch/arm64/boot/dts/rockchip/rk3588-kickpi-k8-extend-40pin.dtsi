@@ -1,0 +1,117 @@
+&uart4 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart4m0_xfer>;
+};
+
+&uart6 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart6m0_xfer>;
+};
+
+&uart7 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart7m0_xfer>;
+};
+
+&pwm2 {
+    status = "okay";
+    pinctrl-0 = <&pwm2m1_pins>;
+};
+
+&pwm3 {
+    status = "okay";
+    pinctrl-0 = <&pwm3m1_pins>;
+};
+
+&can1 {
+    status = "okay";
+    pinctrl-0 = <&can1m0_pins>;
+};
+
+&i2c4 {
+	status = "okay";
+	pinctrl-0 = <&i2c4m3_xfer>;
+};
+
+&pinctrl {
+    spi0 {
+        spi0_cs0n: spi0-cs0n {
+            rockchip,pins = <1 RK_PA7 RK_FUNC_GPIO &pcfg_pull_up_drv_level_0>;
+        };
+
+        spi0_cs1n: spi0-cs1n {
+            rockchip,pins = <1 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up_drv_level_0>;
+        };
+    };
+};
+
+&spi0 {
+    status = "okay";
+    pinctrl-0 = <&spi0_cs0n &spi0_cs1n &spi0m2_pins>;
+    cs-gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_LOW>, <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+
+	spidev0: spidev@0 {
+		compatible = "rockchip,spidev";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <24000000>;
+	};
+
+};
+
+&leds {
+
+    gpio2b7 {
+        label = "gpio2b7";
+		gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+    gpio3a0 {
+        label = "gpio3a0";
+		gpios = <&gpio3 RK_PA0 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+    gpio3a1 {
+        label = "gpio3a1";
+		gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+    gpio3a2 {
+        label = "gpio3a2";
+		gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+/*
+    gpio3b1 {
+        label = "gpio3b1";
+		gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+    gpio3b2 {
+        label = "gpio3b2";
+		gpios = <&gpio3 RK_PB2 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+*/
+    gpio3b3 {
+        label = "gpio3b3";
+		gpios = <&gpio3 RK_PB3 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+    gpio3b4 {
+        label = "gpio3b4";
+		gpios = <&gpio3 RK_PB4 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+	};
+
+
+};

@@ -1,0 +1,59 @@
+
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/rockchip_vop.h>
+#include "rk3568.dtsi"
+#include "rk3568-kickpi-evb.dtsi"
+
+// LCD
+//#include "rk3568-kickpi-lcd-mipi0-10.1-800-1280.dtsi"
+//#include "rk3568-kickpi-lcd-lvds0-7-1024-600.dtsi"
+//#include "rk3568-kickpi-lcd-mipi0-10.1-800-1280-v2.dtsi"
+//#include "rk3568-kickpi-lcd-mipi0-8-800-1280.dtsi"
+//#include "rk3568-kickpi-lcd-mipi0-5-720-1280.dtsi"
+#include "rk3568-kickpi-lcd-hdmi.dtsi"
+ 
+// Network
+#include "rk3568-kickpi-eth-gmac0.dtsi"
+#include "rk3568-kickpi-wifibt.dtsi"
+
+// Camera
+#include "rk3568-kickpi-mipi-camera-gc5035.dtsi"
+
+// Other
+#include "rk3568-kickpi-usb.dtsi"
+#include "rk3568-kickpi-ir.dtsi"
+#include "rk3568-kickpi-extend-20pin.dtsi"
+
+/ {
+	model = "Rockchip RK3568 KICKPI K1B Board";
+	compatible = "rockchip,rk3568-kickpi-k1b", "rockchip,rk3568";
+
+	vcc2v5_sys: vcc2v5-ddr {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc2v5-sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <2500000>;
+		regulator-max-microvolt = <2500000>;
+		vin-supply = <&vcc3v3_sys>;
+	};
+
+	vcc3v3_bu: vcc3v3-bu {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3_bu";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc5v0_sys>;
+	};
+};

@@ -1,0 +1,33 @@
+
+
+&i2c5 {
+	status = "okay";
+	pinctrl-names = "default";
+        pinctrl-0 = <&i2c5m0_xfer>;
+};
+
+
+&uart4 {
+	status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart4m0_xfer>;
+};
+
+&leds {
+	gpio3c0 {
+		gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_HIGH>;
+		default-state = "on";
+	};
+	gpio3c1 {
+		gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;
+		default-state = "on";
+	};
+	gpio0a6 {
+		gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
+		default-state = "on";
+	};
+	gpio4b6 {
+		gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+		default-state = "on";
+	};
+};

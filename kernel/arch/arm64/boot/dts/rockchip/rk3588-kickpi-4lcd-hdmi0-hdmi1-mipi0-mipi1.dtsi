@@ -1,0 +1,101 @@
+/********************************************************************************/
+#include "rk3588-kickpi-lcd-hdmi0.dtsi"
+/* HDMI0 */
+&route_hdmi0 {
+	connect = <&vp0_out_hdmi0>;
+};
+
+&hdmi0_in_vp0 {
+	status = "okay";
+};
+
+&hdmi0_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi0_in_vp2 {
+	status = "disabled";
+};
+
+/********************************************************************************/
+#include "rk3588-kickpi-lcd-hdmi1.dtsi"
+/* HDMI1 */
+&route_hdmi1 {
+	connect = <&vp1_out_hdmi1>;
+};
+
+&hdmi1_in_vp0 {
+	status = "disabled";
+};
+
+&hdmi1_in_vp1 {
+	status = "okay";
+};
+
+&hdmi1_in_vp2 {
+	status = "disabled";
+};
+
+/********************************************************************************/
+#include "rk3588-kickpi-lcd-dp.dtsi"
+/* DP */
+&dp0 {
+	status = "okay";
+};
+
+&route_dp0 {
+    status = "okay";
+	connect = <&vp0_out_dp0>;
+};
+
+&dp0_in_vp0 {
+	status = "okay";
+};
+
+&dp0_in_vp1 {
+	status = "disabled";
+};
+
+&dp0_in_vp2 {
+	status = "disabled";
+};
+
+/********************************************************************************/
+//#include "rk3588-kickpi-lcd-mipi0-10.1-800-1280-AT101DS40I.dtsi"
+//#include "rk3588-kickpi-lcd-mipi0-10.1-800-1280-MX101BA1340.dtsi"
+//#include "rk3588-kickpi-lcd-mipi0-8-800-1280-MX080B2140.dtsi"
+#include "rk3588-kickpi-lcd-mipi0-5-720-1280-F050008M01.dtsi"
+/* MIPI0 */
+&route_dsi0 {
+	status = "okay";
+	// connect = <&vp2_out_dsi0>;
+	connect = <&vp3_out_dsi0>;
+};
+
+&dsi0_in_vp2 {
+	status = "disabled";
+};
+
+&dsi0_in_vp3 {
+	status = "okay";
+};
+
+/********************************************************************************/
+//#include "rk3588-kickpi-lcd-mipi1-10.1-800-1280-AT101DS40I.dtsi"
+//#include "rk3588-kickpi-lcd-mipi1-10.1-800-1280-MX101BA1340.dtsi"
+#include "rk3588-kickpi-lcd-mipi1-8-800-1280-MX080B2140.dtsi"
+//#include "rk3588-kickpi-lcd-mipi1-5-720-1280-F050008M01.dtsi"
+/* MIPI1 */
+&route_dsi1 {
+	status = "okay";
+	connect = <&vp2_out_dsi1>;
+	// connect = <&vp3_out_dsi1>;
+};
+
+&dsi1_in_vp2 {
+	status = "okay";
+};
+
+&dsi1_in_vp3 {
+	status = "disabled";
+};

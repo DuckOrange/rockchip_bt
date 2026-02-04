@@ -1,0 +1,10 @@
+/dts-v1/;
+
+#include "rk3566-kickpi-tx66.dtsi"
+#include "rk3568-linux.dtsi"
+
+
+
+&usbdrd_dwc3 {
+	dr_mode = "host";
+};

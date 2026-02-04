@@ -1,0 +1,4 @@
+/dts-v1/;
+
+#include "rk3566-kickpi-tx66.dtsi"
+#include "rk3568-android.dtsi"

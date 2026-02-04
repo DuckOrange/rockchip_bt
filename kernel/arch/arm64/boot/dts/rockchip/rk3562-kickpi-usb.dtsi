@@ -1,0 +1,88 @@
+/ {
+        vcc5v0_usb: vcc5v0-usb {
+                compatible = "regulator-fixed";
+                regulator-name = "vcc5v0_usb";
+                regulator-always-on;
+                regulator-boot-on;
+                regulator-min-microvolt = <5000000>;
+                regulator-max-microvolt = <5000000>;
+                vin-supply = <&dc_12v>;
+        };
+/*
+        vcc5v0_usb_host: vcc5v0-usb-host {
+                compatible = "regulator-fixed";
+                regulator-name = "vcc5v0_usb_host";
+                regulator-boot-on;
+                regulator-always-on;
+                regulator-min-microvolt = <5000000>;
+                regulator-max-microvolt = <5000000>;
+                enable-active-high;
+                gpio = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
+                vin-supply = <&vcc5v0_usb>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&usb_host_pwren>;
+        };
+*/
+        vcc5v0_usb_otg: vcc5v0-usb-otg {
+                compatible = "regulator-fixed";
+                regulator-name = "vcc5v0_usb_otg";
+                regulator-min-microvolt = <5000000>;
+                regulator-max-microvolt = <5000000>;
+                enable-active-high;
+                gpio = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
+                vin-supply = <&vcc5v0_usb>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&usb_otg_pwren>;
+        };
+};
+
+
+&u2phy {
+        status = "okay";
+};
+
+&u2phy_host {
+        status = "okay";
+        phy-supply = <&vcc5v0_usb_otg>;
+};
+
+&u2phy_otg {
+        status = "okay";
+        //vbus-supply = <&vcc5v0_usb_otg>;
+};
+
+&usb_host0_ehci {
+        status = "okay";
+};
+
+&usb_host0_ohci {
+        status = "okay";
+};
+
+&usbdrd30 {
+        status = "okay";
+};
+
+&usbdrd_dwc3 {
+        status = "okay";
+        dr_mode = "otg";
+        extcon = <&u2phy>;
+        maximum-speed = "high-speed";
+        phys = <&u2phy_otg>;
+        phy-names = "usb2-phy";
+        snps,dis_u2_susphy_quirk;
+        snps,usb2-lpm-disable;
+};
+
+&pinctrl {
+        usb {
+/*              usb_host_pwren: usb-host-pwren {
+                        rockchip,pins = <3 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
+                };
+*/
+                usb_otg_pwren: usb-otg-pwren {
+                        rockchip,pins = <3 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
+                };
+
+        };
+};

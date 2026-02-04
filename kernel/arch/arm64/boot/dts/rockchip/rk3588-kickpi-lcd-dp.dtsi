@@ -1,0 +1,47 @@
+&dp0 {
+	status = "ok";
+};
+
+&dp0_sound{
+	status = "ok";
+};
+
+&spdif_tx2 {
+	status = "ok";
+};
+
+&route_dp0 {
+    status = "okay";
+	connect = <&vp0_out_dp0>;
+};
+
+&dp0_in_vp0 {
+	status = "okay";
+};
+
+&dp0_in_vp1 {
+	status = "disabled";
+};
+
+&dp0_in_vp2 {
+	status = "disabled";
+};
+
+// dp1
+&dp1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&dp1m0_pins>;
+	status = "disabled";
+};
+
+&dp1_in_vp2 {
+	status = "disabled";
+};
+
+&dp1_sound {
+	status = "disabled";
+};
+
+&spdif_tx5 {
+	status = "disabled";
+};

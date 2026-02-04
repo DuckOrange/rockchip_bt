@@ -1,0 +1,147 @@
+&i2c5 {
+        status = "okay";
+        gc5035_1: gc5035_1@37 {
+                compatible = "galaxycore,gc5035";
+                status = "okay";
+                reg = <0x37>;
+
+                clocks = <&cru CLK_CAM1_OUT2IO>;
+                clock-names = "xvclk";
+                pinctrl-names = "default";
+                pinctrl-0 = <&camm0_clk1_out>;
+                //reset-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+                //pwdn-gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;
+
+                reset-gpios = <&pca9554_gpio 2 GPIO_ACTIVE_HIGH>;
+                pwdn-gpios = <&pca9554_gpio 5 GPIO_ACTIVE_HIGH>;
+
+                rockchip,camera-module-index = <1>;
+                rockchip,camera-module-facing = "back";
+                rockchip,camera-module-name = "default";
+                rockchip,camera-module-lens-name = "PC5322-M5";
+                port {
+                        gc5035_out1: endpoint {
+                                remote-endpoint = <&mipi_in_ucam1>;
+                                data-lanes = <1 2>;
+                        };
+                };
+        };
+};
+
+
+&csi2_dphy1_hw {
+	status = "okay";
+};
+
+&csi2_dphy3 {
+        status = "okay";
+
+        ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                port@0 {
+                        reg = <0>;
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+			mipi_in_ucam1: endpoint@0 {
+                                reg = <0>;
+                                remote-endpoint = <&gc5035_out1>;
+                                data-lanes = <1 2>;
+                        };
+              };
+                port@1 {
+                        reg = <1>;
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        csidcphy2_out: endpoint@0 {
+                                reg = <0>;
+                                remote-endpoint = <&mipi2_csi2_input>;
+                        };
+                };
+        };
+};
+
+
+&mipi2_csi2 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipi2_csi2_input: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&csidcphy2_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipi2_csi2_output: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&cif_mipi_in2>;
+			};
+		};
+	};
+};
+
+&rkcif {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds2 {
+	status = "okay";
+
+	port {
+		cif_mipi_in2: endpoint {
+			remote-endpoint = <&mipi2_csi2_output>;
+		};
+	};
+};
+
+&rkcif_mipi_lvds2_sditf {
+	status = "okay";
+
+	port {
+		mipi_lvds2_sditf: endpoint {
+			remote-endpoint = <&isp_vir1>;
+		};
+	};
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkisp {
+	status = "okay";
+};
+
+&rkisp_mmu {
+	status = "okay";
+};
+
+&rkisp_vir1 {
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isp_vir1: endpoint@1 {
+			reg = <1>;
+			remote-endpoint = <&mipi_lvds2_sditf>;
+		};
+	};
+};
+

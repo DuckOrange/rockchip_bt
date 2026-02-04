@@ -1,0 +1,54 @@
+#include "rk3568-kickpi-lcd-edp-15.6-1920-1080.dtsi"
+#include "rk3568-kickpi-lcd-mipi1-10.1-800-1280.dtsi"
+#include "rk3568-kickpi-lcd-lvds-7-1024-600.dtsi"
+
+
+&dsi1_in_vp0 {
+	status = "okay";
+};
+
+&dsi1_in_vp1 {
+	status = "disabled";
+};
+
+&route_dsi1 {
+	status = "okay";
+	connect = <&vp0_out_dsi1>;
+};
+
+&edp_in_vp0 {
+	status = "disabled";
+};
+
+&edp_in_vp1 {
+	status = "okay";
+};
+
+&route_edp {
+	status = "okay";
+	connect = <&vp1_out_edp>;
+};
+
+&lvds_in_vp1 {
+	status = "disabled";
+};
+
+&lvds_in_vp2 {
+	status = "okay";
+};
+
+&route_lvds {
+	status = "okay";
+	connect = <&vp2_out_lvds>;
+};
+
+// LVDS and EDP are mux of backlight
+&lvds_panel {
+	/delete-property/ backlight;
+};
+
+// TRIPLE PANEL 
+&vop {
+   assigned-clocks = <&cru DCLK_VOP0>, <&cru DCLK_VOP1>, <&cru DCLK_VOP2>;
+   assigned-clock-parents = <&cru PLL_HPLL>, <&cru PLL_VPLL>, <&cru PLL_GPLL>;
+};

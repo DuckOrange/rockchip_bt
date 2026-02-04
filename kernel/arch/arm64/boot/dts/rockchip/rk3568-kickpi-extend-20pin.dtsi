@@ -1,0 +1,42 @@
+
+
+&pwm3 {
+    status = "okay";
+};
+
+&spi3 {
+    status = "okay";
+    pinctrl-names = "default", "high_speed";
+    pinctrl-0 = <&spi3m1_pins>;
+    pinctrl-1 = <&spi3m1_pins_hs>;
+};
+
+&i2c3 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c3m0_xfer>;
+};
+
+&i2c2 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c2m1_xfer>;
+};
+
+&uart3 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart3m1_xfer>;
+};
+
+&uart4 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart4m1_xfer>;
+};
+
+&uart7 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart7m1_xfer>;
+};

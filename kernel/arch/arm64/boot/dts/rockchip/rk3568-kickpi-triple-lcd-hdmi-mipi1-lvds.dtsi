@@ -1,0 +1,23 @@
+#include "rk3568-kickpi-lcd-hdmi.dtsi"
+#include "rk3568-kickpi-lcd-mipi1-10.1-800-1280.dtsi"
+#include "rk3568-kickpi-lcd-lvds-7-1024-600.dtsi"
+
+
+&lvds_in_vp1 {
+	status = "disabled";
+};
+
+&lvds_in_vp2 {
+	status = "okay";
+};
+
+&route_lvds {
+	status = "okay";
+	connect = <&vp2_out_lvds>;
+};
+
+// TRIPLE PANEL 
+&vop {
+    assigned-clocks = <&cru DCLK_VOP0>, <&cru DCLK_VOP1>, <&cru DCLK_VOP2>;
+    assigned-clock-parents = <&cru PLL_HPLL>, <&cru PLL_VPLL>, <&cru PLL_GPLL>;
+};

@@ -62,6 +62,9 @@ static bool logic_inited = false;            // 初始化标志
 // 计数器
 static int my_packet_counter = 0; 
 
+// 【新增】：闭锁标志，防止重复重置定时器
+static bool is_waiting_flush = false; 
+
 static void hci_rx_work(struct work_struct *work);
 static void hci_cmd_work(struct work_struct *work);
 static void hci_tx_work(struct work_struct *work);
@@ -4050,8 +4053,8 @@ static void my_flush_work_func(struct work_struct *work)
     int flushed_count = 0;
 
     // 每次放水的最大数量限制（防止长时间占用 CPU，给其他指令机会）
-    // 比如一次最多放 10 个包，其他的等下个 tick
-    int budget = 20; 
+    // 比如一次最多放 10 个包，其他的等下个 tick  这样芯片就有喘息的时间去维持空口 POLL 心跳了。
+    int budget = 5; 
 
     // 1. 先把包从队列里拿出来
     while (budget > 0 && (skb = skb_dequeue(&my_delay_queue)) != NULL) {
@@ -4072,7 +4075,7 @@ static void my_flush_work_func(struct work_struct *work)
             
             // 2. 驱动现在很忙，我们不要硬塞。
             // 暂停放水，设定闹钟，2ms 后再回来重试。
-            schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(2));
+            schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(5));
             
 			pr_info_ratelimited("MyBT: Delayed for 2 ms due to busy driver.");
 
@@ -4092,6 +4095,9 @@ static void my_flush_work_func(struct work_struct *work)
 
     } else {
         // 全发完了，重置逻辑
+
+		// 【关键】：解锁！允许 hci_send_frame 重新开始计数和调度
+        is_waiting_flush = false;
         my_packet_counter = 0;
         if (flushed_count > 0)
             pr_info_ratelimited("MyBT: Batch sent! Flushed %d packets.\n", flushed_count);
@@ -4145,10 +4151,14 @@ static void hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
         
         if (my_packet_counter >= 100) {
             force_queue = true;
-            pr_info_ratelimited("MyBT: Limit 100 reached! Blocking for 100ms...\n");
-            
-            // 启动定时器：50ms 后执行 my_flush_work_func
-            schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(100));
+            if (!is_waiting_flush) {
+                is_waiting_flush = true;
+                
+                pr_info_ratelimited("MyBT: Limit 100 reached! Blocking for 300ms...\n");
+                
+                // 建议先试 300ms，500ms 比较极限
+                schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(300));
+            }
         }
     }
 

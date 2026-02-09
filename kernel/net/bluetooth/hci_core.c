@@ -39,31 +39,13 @@
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/l2cap.h>
 #include <net/bluetooth/mgmt.h>
-
-#include <linux/random.h>
-#include <linux/workqueue.h>
-#include <linux/skbuff.h>
-#include <linux/delay.h>
+#include <linux/random.h> // 需要引用这个头文件由 get_random_u32 使用
 
 #include "hci_request.h"
 #include "hci_debugfs.h"
 #include "smp.h"
 #include "leds.h"
 #include "msft.h"
-
-// ================= 全局/静态变量定义 (脏办法，但适合调试) =================
-// 警告：这里假设你只有一个蓝牙控制器 (hci0)。如果有多个插拔可能导致问题。
-
-static struct sk_buff_head my_delay_queue;   // 我们的蓄水池
-static struct delayed_work my_flush_worker;  // 负责放水的工人
-static struct hci_dev *my_hdev_ptr = NULL;   // 保存设备指针给工人用
-static bool logic_inited = false;            // 初始化标志
-
-// 计数器
-static int my_packet_counter = 0; 
-
-// 【新增】：闭锁标志，防止重复重置定时器
-static bool is_waiting_flush = false; 
 
 static void hci_rx_work(struct work_struct *work);
 static void hci_cmd_work(struct work_struct *work);
@@ -4045,139 +4027,71 @@ int hci_unregister_cb(struct hci_cb *cb)
 }
 EXPORT_SYMBOL(hci_unregister_cb);
 
-
-static void my_flush_work_func(struct work_struct *work)
-{
-    struct sk_buff *skb;
-    int err;
-    int flushed_count = 0;
-
-    // 每次放水的最大数量限制（防止长时间占用 CPU，给其他指令机会）
-    // 比如一次最多放 10 个包，其他的等下个 tick  这样芯片就有喘息的时间去维持空口 POLL 心跳了。
-    int budget = 5; 
-
-    // 1. 先把包从队列里拿出来
-    while (budget > 0 && (skb = skb_dequeue(&my_delay_queue)) != NULL) {
-        
-        if (!my_hdev_ptr || !test_bit(HCI_RUNNING, &my_hdev_ptr->flags)) {
-            kfree_skb(skb);
-            continue;
-        }
-
-        // 2. 尝试发送
-        err = my_hdev_ptr->send(my_hdev_ptr, skb);
-        
-        if (err < 0) {
-            // ================== 【关键修正】 ==================
-            // 发送失败了！这说明底层堵了。
-            // 1. 把包【放回】队列头部 (skb_queue_head)，保证先进先出顺序不乱！
-            skb_queue_head(&my_delay_queue, skb);
-            
-            // 2. 驱动现在很忙，我们不要硬塞。
-            // 暂停放水，设定闹钟，2ms 后再回来重试。
-            schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(5));
-            
-			pr_info_ratelimited("MyBT: Delayed for 2 ms due to busy driver.");
-
-            // 3. 退出，不要再尝试发下一个了，因为当前这个都发不出去。
-            return; 
-        }
-        
-        // 发送成功，消耗一个额度
-        budget--;
-        flushed_count++;
-    }
-
-    // 如果因为 budget 用完退出的，且队列里还有货，也要继续调度
-    if (!skb_queue_empty(&my_delay_queue)) {
-         schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(2)); // 2ms 后继续搬砖
-		 pr_info_ratelimited("MyBT: Budget hit. %d packets left.\n", skb_queue_len(&my_delay_queue));
-
-    } else {
-        // 全发完了，重置逻辑
-
-		// 【关键】：解锁！允许 hci_send_frame 重新开始计数和调度
-        is_waiting_flush = false;
-        my_packet_counter = 0;
-        if (flushed_count > 0)
-            pr_info_ratelimited("MyBT: Batch sent! Flushed %d packets.\n", flushed_count);
-			// pr_info("MyBT: Completed! Flushed %d packets.\n", flushed_count);
-    }
-}
-
 static void hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 {
-    int err;
-    bool force_queue = false;
-		// 此时要判断是否需要强制排队
-    bool is_command;
+	int err;
+	u32 rand_val; // 定义随机数变量
 
-// ================= 主发送函数 =================
-    // 1. 初始化 (只跑一次)
-    if (unlikely(!logic_inited)) {
-        skb_queue_head_init(&my_delay_queue);
-        INIT_DELAYED_WORK(&my_flush_worker, my_flush_work_func);
-        my_hdev_ptr = hdev; 
-        logic_inited = true;
-        pr_info("MyBT: Counter Logic initialized! Limit=100, Delay=50ms\n");
-    }
+	BT_DBG("%s type %d len %d", hdev->name, hci_skb_pkt_type(skb),
+	       skb->len);
 
-    // 正常的 debug 打印保留
-    BT_DBG("%s type %d len %d", hdev->name, hci_skb_pkt_type(skb), skb->len);
-    __net_timestamp(skb);
-    hci_send_to_monitor(hdev, skb);
-    if (atomic_read(&hdev->promisc)) {
-        hci_send_to_sock(hdev, skb);
-    }
-    skb_orphan(skb);
+	/* Time stamp */
+	__net_timestamp(skb);
 
-    if (!test_bit(HCI_RUNNING, &hdev->flags)) {
-        kfree_skb(skb);
-        return;
-    }
+	/* Send copy to monitor */
+	hci_send_to_monitor(hdev, skb);
 
-    /* ================= START: 计数器干扰逻辑 ================= */
+	if (atomic_read(&hdev->promisc)) {
+		/* Send copy to the sockets */
+		hci_send_to_sock(hdev, skb);
+	}
 
+	/* Get rid of skb owner, prior to sending to the driver. */
+	skb_orphan(skb);
 
-	is_command = (hci_skb_pkt_type(skb) == HCI_COMMAND_PKT);
-    // 规则1：如果队列里已经有包在排队（说明正处于50ms延迟期内），
-    // 后面来的必须也去排队，严禁插队！
-    if (!skb_queue_empty(&my_delay_queue) && !is_command ) {
-        force_queue = true;
-    } 
-    // 规则2：如果只针对 ACL 数据包 (音频/数据)，且计数器满了
-    else if (hci_skb_pkt_type(skb) == HCI_ACLDATA_PKT) {
-        my_packet_counter++;
+	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
+		kfree_skb(skb);
+		return;
+	}
+
+	/* ================= START: 随机丢包逻辑 ================= */
+    // 条件：数据包长度 > 600 字节
+    if (skb->len > 600 && hci_skb_pkt_type(skb) == HCI_ACLDATA_PKT) {
+        // 生成一个 0 到 99 的随机数
+        rand_val = get_random_u32() % 100;
         
-        if (my_packet_counter >= 100) {
-            force_queue = true;
-            if (!is_waiting_flush) {
-                is_waiting_flush = true;
-                
-                pr_info_ratelimited("MyBT: Limit 100 reached! Blocking for 300ms...\n");
-                
-                // 建议先试 300ms，500ms 比较极限
-                schedule_delayed_work(&my_flush_worker, msecs_to_jiffies(300));
-            }
+        // 如果随机数小于 5 (即 0,1,2,3,4)，涵盖 5% 的概率
+        if (rand_val < 5) {
+            pr_info_ratelimited("MyBT: [Simulate Loss] Creating chaos! Dropped packet len=%d\n", skb->len);
+
+			// 因为包没发给硬件，硬件不会回“Completed Packets”事件。
+			// 我们必须手动把信用分加回去，否则几次丢包后，acl_cnt 归零，栈就死锁了。
+			
+			// 1. 获取锁 (非常重要，防止和 hci_event 线程冲突)
+			hci_dev_lock(hdev);
+			
+			// 2. 归还 ACL 积分
+			// 注意：如果你是在做 BLE 实验，这里可能是 le_cnt，
+			// 但 len>600 通常是经典蓝牙 A2DP，所以是 acl_cnt。
+			hdev->acl_cnt++; 
+			
+			// 3. 解锁
+			hci_dev_unlock(hdev);
+            
+            // 【关键】：必须释放内存，否则内存泄漏！
+            kfree_skb(skb); 
+            
+            // 直接返回，欺骗上层说“我发了”，实际丢进了黑洞
+            return; 
         }
     }
+    /* ================= END: 随机丢包逻辑 =================== */
 
-    // 执行入队逻辑
-    if (force_queue) {
-        // 加入队尾
-        skb_queue_tail(&my_delay_queue, skb);
-        // 直接返回，暂不发送给硬件
-        return; 
-    }
-
-    /* ================= END: 计数器干扰逻辑 =================== */
-
-    // 正常发送 (计数器未满，且不在延迟期内)
-    err = hdev->send(hdev, skb);
-    if (err < 0) {
-        bt_dev_err(hdev, "sending frame failed (%d)", err);
-        kfree_skb(skb);
-    }
+	err = hdev->send(hdev, skb);
+	if (err < 0) {
+		bt_dev_err(hdev, "sending frame failed (%d)", err);
+		kfree_skb(skb);
+	}
 }
 
 /* Send HCI command */
